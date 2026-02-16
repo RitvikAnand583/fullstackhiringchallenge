@@ -1,6 +1,8 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import usePostStore from "../store/usePostStore";
+import useAutoSave from "../hooks/useAutoSave";
+import useDebounce from "../hooks/useDebounce";
 import Editor from "../components/editor/Editor";
 import { Button, SaveStatus, Badge } from "../components/ui";
 import { Send, Trash2 } from "lucide-react";
@@ -14,18 +16,31 @@ function EditorPage() {
         loading,
         fetchPost,
         createPost,
-        updatePost,
         publishPost,
         deletePost,
         clearActivePost,
+        updatePost,
         setSaveStatus,
     } = usePostStore();
 
     const [title, setTitle] = useState("");
     const [editorReady, setEditorReady] = useState(false);
     const [initialContent, setInitialContent] = useState(null);
-    const debounceTimer = useRef(null);
     const postIdRef = useRef(null);
+
+    const { handleChange: autoSaveContent } = useAutoSave(postIdRef.current, {
+        delay: 1500,
+    });
+
+    const saveTitleToServer = useCallback(
+        (newTitle) => {
+            if (!postIdRef.current) return;
+            updatePost(postIdRef.current, { title: newTitle });
+        },
+        [updatePost]
+    );
+
+    const { debounced: debouncedTitleSave } = useDebounce(saveTitleToServer, 1500);
 
     useEffect(() => {
         const init = async () => {
@@ -49,36 +64,21 @@ function EditorPage() {
             setEditorReady(true);
         };
         init();
-        return () => {
-            clearActivePost();
-            if (debounceTimer.current) clearTimeout(debounceTimer.current);
-        };
+        return () => clearActivePost();
     }, [id]);
-
-    const debouncedSave = useCallback(
-        (postId, data) => {
-            if (debounceTimer.current) clearTimeout(debounceTimer.current);
-            setSaveStatus("saving");
-            debounceTimer.current = setTimeout(() => {
-                updatePost(postId, data);
-            }, 1500);
-        },
-        [updatePost, setSaveStatus]
-    );
 
     const handleContentChange = useCallback(
         (json) => {
-            if (!postIdRef.current) return;
-            debouncedSave(postIdRef.current, { content: json });
+            autoSaveContent({ content: json });
         },
-        [debouncedSave]
+        [autoSaveContent]
     );
 
     const handleTitleChange = (e) => {
         const newTitle = e.target.value;
         setTitle(newTitle);
-        if (!postIdRef.current) return;
-        debouncedSave(postIdRef.current, { title: newTitle });
+        setSaveStatus("saving");
+        debouncedTitleSave(newTitle);
     };
 
     const handlePublish = async () => {
