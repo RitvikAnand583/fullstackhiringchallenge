@@ -85,13 +85,14 @@ function EditorPage() {
     const handlePublish = async () => {
         if (!postIdRef.current) return;
         await publishPost(postIdRef.current);
+        navigate("/");
     };
 
     const handleDelete = async () => {
         if (!postIdRef.current) return;
         await deletePost(postIdRef.current);
         setShowDeleteModal(false);
-        navigate("/");
+        navigate("/dashboard");
     };
 
     if (loading && !editorReady) {

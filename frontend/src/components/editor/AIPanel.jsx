@@ -21,9 +21,14 @@ function AIPanel({ getText }) {
         setIsOpen(true);
 
         try {
-            const res = await fetch("/api/ai/generate", {
+            const token = localStorage.getItem("token");
+            const headers = { "Content-Type": "application/json" };
+            if (token) headers["Authorization"] = `Bearer ${token}`;
+
+            const base = import.meta.env.VITE_API_URL || "/api";
+            const res = await fetch(`${base}/ai/generate`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers,
                 body: JSON.stringify({ text, action }),
             });
 

@@ -1,16 +1,53 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Layout from "./components/Layout";
+import ProtectedRoute from "./components/ProtectedRoute";
+import HomePage from "./pages/HomePage";
+import PostViewPage from "./pages/PostViewPage";
 import PostsPage from "./pages/PostsPage";
 import EditorPage from "./pages/EditorPage";
+import LoginPage from "./pages/LoginPage";
+import SignupPage from "./pages/SignupPage";
 
 function App() {
     return (
         <BrowserRouter>
             <Routes>
-                <Route path="/" element={<Layout />}>
+                {/* public routes */}
+                <Route path="/" element={<HomePage />} />
+                <Route path="/post/:id" element={<PostViewPage />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/signup" element={<SignupPage />} />
+
+                {/* protected routes - need login */}
+                <Route
+                    path="/dashboard"
+                    element={
+                        <ProtectedRoute>
+                            <Layout />
+                        </ProtectedRoute>
+                    }
+                >
                     <Route index element={<PostsPage />} />
-                    <Route path="editor/:id" element={<EditorPage />} />
-                    <Route path="editor" element={<EditorPage />} />
+                </Route>
+                <Route
+                    path="/editor/:id"
+                    element={
+                        <ProtectedRoute>
+                            <Layout />
+                        </ProtectedRoute>
+                    }
+                >
+                    <Route index element={<EditorPage />} />
+                </Route>
+                <Route
+                    path="/editor"
+                    element={
+                        <ProtectedRoute>
+                            <Layout />
+                        </ProtectedRoute>
+                    }
+                >
+                    <Route index element={<EditorPage />} />
                 </Route>
             </Routes>
         </BrowserRouter>

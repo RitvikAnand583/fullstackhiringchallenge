@@ -27,6 +27,8 @@ class PostResponse(BaseModel):
     title: str
     content: Optional[Any] = None
     status: PostStatus = PostStatus.DRAFT
+    author_id: str = ""
+    author_name: str = ""
     created_at: datetime
     updated_at: datetime
 
@@ -36,5 +38,6 @@ class PostListItem(BaseModel):
     id: str
     title: str
     status: PostStatus
+    author_name: str = ""
     created_at: datetime
     updated_at: datetime

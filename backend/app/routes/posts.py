@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from bson import ObjectId
 from datetime import datetime
 from app.database import posts_collection
@@ -9,6 +9,7 @@ from app.models.post import (
     PostListItem,
     PostStatus,
 )
+from app.auth import get_current_user
 
 router = APIRouter(prefix="/api/posts", tags=["posts"])
 
@@ -20,18 +21,52 @@ def post_to_response(doc) -> dict:
         "title": doc.get("title", "Untitled"),
         "content": doc.get("content"),
         "status": doc.get("status", "draft"),
+        "author_id": doc.get("author_id", ""),
+        "author_name": doc.get("author_name", ""),
         "created_at": doc.get("created_at"),
         "updated_at": doc.get("updated_at"),
     }
 
 
+# public route - anyone can see published posts
+@router.get("/public", response_model=list[PostListItem])
+async def list_published_posts():
+    posts = []
+    cursor = posts_collection.find({"status": "published"}).sort("updated_at", -1)
+    async for doc in cursor:
+        posts.append({
+            "id": str(doc["_id"]),
+            "title": doc.get("title", "Untitled"),
+            "status": doc.get("status", "draft"),
+            "author_name": doc.get("author_name", ""),
+            "created_at": doc.get("created_at"),
+            "updated_at": doc.get("updated_at"),
+        })
+    return posts
+
+
+# public route - anyone can read a published post
+@router.get("/public/{post_id}", response_model=PostResponse)
+async def get_public_post(post_id: str):
+    if not ObjectId.is_valid(post_id):
+        raise HTTPException(status_code=400, detail="Invalid post id")
+    doc = await posts_collection.find_one({"_id": ObjectId(post_id), "status": "published"})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Post not found")
+    return post_to_response(doc)
+
+
 @router.post("/", response_model=PostResponse)
-async def create_post(data: PostCreate):
+async def create_post(data: PostCreate, user_id: str = Depends(get_current_user)):
+    from app.database import users_collection
+    user = await users_collection.find_one({"_id": ObjectId(user_id)})
     now = datetime.utcnow()
     doc = {
         "title": data.title,
         "content": data.content,
         "status": PostStatus.DRAFT,
+        "author_id": user_id,
+        "author_name": user["name"] if user else "",
         "created_at": now,
         "updated_at": now,
     }
@@ -41,14 +76,15 @@ async def create_post(data: PostCreate):
 
 
 @router.get("/", response_model=list[PostListItem])
-async def list_posts():
+async def list_posts(user_id: str = Depends(get_current_user)):
     posts = []
-    cursor = posts_collection.find().sort("updated_at", -1)
+    cursor = posts_collection.find({"author_id": user_id}).sort("updated_at", -1)
     async for doc in cursor:
         posts.append({
             "id": str(doc["_id"]),
             "title": doc.get("title", "Untitled"),
             "status": doc.get("status", "draft"),
+            "author_name": doc.get("author_name", ""),
             "created_at": doc.get("created_at"),
             "updated_at": doc.get("updated_at"),
         })
@@ -56,17 +92,17 @@ async def list_posts():
 
 
 @router.get("/{post_id}", response_model=PostResponse)
-async def get_post(post_id: str):
+async def get_post(post_id: str, user_id: str = Depends(get_current_user)):
     if not ObjectId.is_valid(post_id):
         raise HTTPException(status_code=400, detail="Invalid post id")
-    doc = await posts_collection.find_one({"_id": ObjectId(post_id)})
+    doc = await posts_collection.find_one({"_id": ObjectId(post_id), "author_id": user_id})
     if not doc:
         raise HTTPException(status_code=404, detail="Post not found")
     return post_to_response(doc)
 
 
 @router.patch("/{post_id}", response_model=PostResponse)
-async def update_post(post_id: str, data: PostUpdate):
+async def update_post(post_id: str, data: PostUpdate, user_id: str = Depends(get_current_user)):
     if not ObjectId.is_valid(post_id):
         raise HTTPException(status_code=400, detail="Invalid post id")
 
@@ -79,7 +115,7 @@ async def update_post(post_id: str, data: PostUpdate):
     updates["updated_at"] = datetime.utcnow()
 
     result = await posts_collection.update_one(
-        {"_id": ObjectId(post_id)},
+        {"_id": ObjectId(post_id), "author_id": user_id},
         {"$set": updates},
     )
     if result.matched_count == 0:
@@ -90,12 +126,12 @@ async def update_post(post_id: str, data: PostUpdate):
 
 
 @router.post("/{post_id}/publish", response_model=PostResponse)
-async def publish_post(post_id: str):
+async def publish_post(post_id: str, user_id: str = Depends(get_current_user)):
     if not ObjectId.is_valid(post_id):
         raise HTTPException(status_code=400, detail="Invalid post id")
 
     result = await posts_collection.update_one(
-        {"_id": ObjectId(post_id)},
+        {"_id": ObjectId(post_id), "author_id": user_id},
         {"$set": {"status": PostStatus.PUBLISHED, "updated_at": datetime.utcnow()}},
     )
     if result.matched_count == 0:
@@ -106,11 +142,11 @@ async def publish_post(post_id: str):
 
 
 @router.delete("/{post_id}")
-async def delete_post(post_id: str):
+async def delete_post(post_id: str, user_id: str = Depends(get_current_user)):
     if not ObjectId.is_valid(post_id):
         raise HTTPException(status_code=400, detail="Invalid post id")
 
-    result = await posts_collection.delete_one({"_id": ObjectId(post_id)})
+    result = await posts_collection.delete_one({"_id": ObjectId(post_id), "author_id": user_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Post not found")
     return {"message": "Post deleted"}
