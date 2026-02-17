@@ -1,12 +1,16 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import usePostStore from "../store/usePostStore";
-import { Badge, Button, Spinner } from "../components/ui";
-import { Trash2, ArrowRight } from "lucide-react";
+import { Badge, Button, Spinner, Modal } from "../components/ui";
+import { Trash2, ArrowRight, PenLine } from "lucide-react";
+
+const TABS = ["all", "draft", "published"];
 
 function PostsPage() {
     const { posts, loading, fetchPosts, deletePost, createPost } = usePostStore();
     const navigate = useNavigate();
+    const [activeTab, setActiveTab] = useState("all");
+    const [deleteTarget, setDeleteTarget] = useState(null);
 
     useEffect(() => {
         fetchPosts();
@@ -17,9 +21,10 @@ function PostsPage() {
         if (post) navigate(`/editor/${post.id}`);
     };
 
-    const handleDelete = async (e, id) => {
-        e.stopPropagation();
-        await deletePost(id);
+    const confirmDelete = async () => {
+        if (!deleteTarget) return;
+        await deletePost(deleteTarget);
+        setDeleteTarget(null);
     };
 
     const formatDate = (dateStr) => {
@@ -29,6 +34,10 @@ function PostsPage() {
             year: "numeric",
         });
     };
+
+    const filtered = activeTab === "all"
+        ? posts
+        : posts.filter((p) => p.status === activeTab);
 
     if (loading && posts.length === 0) {
         return (
@@ -40,19 +49,49 @@ function PostsPage() {
 
     return (
         <div>
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center justify-between mb-6">
                 <h1 className="text-2xl font-bold text-neutral-900">Your Posts</h1>
-                <Button onClick={handleNew}>New Post</Button>
+                <Button onClick={handleNew}>
+                    <PenLine size={16} />
+                    New Post
+                </Button>
             </div>
 
-            {posts.length === 0 ? (
+            <div className="flex gap-1 mb-6 border-b border-neutral-200">
+                {TABS.map((tab) => (
+                    <button
+                        key={tab}
+                        onClick={() => setActiveTab(tab)}
+                        className={`px-4 py-2 text-sm font-medium capitalize transition-colors border-b-2 -mb-px ${
+                            activeTab === tab
+                                ? "border-neutral-900 text-neutral-900"
+                                : "border-transparent text-neutral-400 hover:text-neutral-600"
+                        }`}
+                    >
+                        {tab}
+                        <span className="ml-1.5 text-xs text-neutral-400">
+                            {tab === "all"
+                                ? posts.length
+                                : posts.filter((p) => p.status === tab).length}
+                        </span>
+                    </button>
+                ))}
+            </div>
+
+            {filtered.length === 0 ? (
                 <div className="text-center py-20">
-                    <p className="text-neutral-500 mb-4">No posts yet</p>
-                    <Button onClick={handleNew}>Create your first post</Button>
+                    <p className="text-neutral-500 mb-4">
+                        {activeTab === "all"
+                            ? "No posts yet"
+                            : `No ${activeTab} posts`}
+                    </p>
+                    {activeTab === "all" && (
+                        <Button onClick={handleNew}>Create your first post</Button>
+                    )}
                 </div>
             ) : (
                 <div className="space-y-3">
-                    {posts.map((post) => (
+                    {filtered.map((post) => (
                         <div
                             key={post.id}
                             onClick={() => navigate(`/editor/${post.id}`)}
@@ -71,7 +110,10 @@ function PostsPage() {
                             </div>
                             <div className="flex items-center gap-2 ml-4">
                                 <button
-                                    onClick={(e) => handleDelete(e, post.id)}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setDeleteTarget(post.id);
+                                    }}
                                     className="p-1.5 text-neutral-400 hover:text-red-500 transition-colors rounded"
                                 >
                                     <Trash2 size={16} />
@@ -82,6 +124,24 @@ function PostsPage() {
                     ))}
                 </div>
             )}
+
+            <Modal
+                isOpen={!!deleteTarget}
+                onClose={() => setDeleteTarget(null)}
+                title="Delete Post"
+            >
+                <p className="text-neutral-600 mb-6">
+                    Are you sure you want to delete this post? This action cannot be undone.
+                </p>
+                <div className="flex justify-end gap-3">
+                    <Button variant="secondary" onClick={() => setDeleteTarget(null)}>
+                        Cancel
+                    </Button>
+                    <Button variant="danger" onClick={confirmDelete}>
+                        Delete
+                    </Button>
+                </div>
+            </Modal>
         </div>
     );
 }

@@ -4,7 +4,7 @@ import usePostStore from "../store/usePostStore";
 import useAutoSave from "../hooks/useAutoSave";
 import useDebounce from "../hooks/useDebounce";
 import Editor from "../components/editor/Editor";
-import { Button, SaveStatus, Badge } from "../components/ui";
+import { Button, SaveStatus, Badge, Modal } from "../components/ui";
 import { Send, Trash2 } from "lucide-react";
 
 function EditorPage() {
@@ -26,6 +26,7 @@ function EditorPage() {
     const [title, setTitle] = useState("");
     const [editorReady, setEditorReady] = useState(false);
     const [initialContent, setInitialContent] = useState(null);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
     const postIdRef = useRef(null);
 
     const { handleChange: autoSaveContent } = useAutoSave(postIdRef.current, {
@@ -89,6 +90,7 @@ function EditorPage() {
     const handleDelete = async () => {
         if (!postIdRef.current) return;
         await deletePost(postIdRef.current);
+        setShowDeleteModal(false);
         navigate("/");
     };
 
@@ -115,7 +117,7 @@ function EditorPage() {
                     <Button
                         variant="ghost"
                         size="sm"
-                        onClick={handleDelete}
+                        onClick={() => setShowDeleteModal(true)}
                     >
                         <Trash2 size={15} />
                         Delete
@@ -143,6 +145,24 @@ function EditorPage() {
                     onChange={handleContentChange}
                 />
             )}
+
+            <Modal
+                isOpen={showDeleteModal}
+                onClose={() => setShowDeleteModal(false)}
+                title="Delete Post"
+            >
+                <p className="text-neutral-600 mb-6">
+                    Are you sure you want to delete this post? This action cannot be undone.
+                </p>
+                <div className="flex justify-end gap-3">
+                    <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
+                        Cancel
+                    </Button>
+                    <Button variant="danger" onClick={handleDelete}>
+                        Delete
+                    </Button>
+                </div>
+            </Modal>
         </div>
     );
 }
