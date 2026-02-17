@@ -9,6 +9,7 @@ import { HeadingNode } from "@lexical/rich-text";
 import { ListNode, ListItemNode } from "@lexical/list";
 import Toolbar from "./Toolbar";
 import OnChangePlugin from "./OnChangePlugin";
+import AISection from "./AISection";
 
 const EDITOR_NODES = [HeadingNode, ListNode, ListItemNode];
 
@@ -59,6 +60,7 @@ function Editor({ initialState, onChange }) {
             <AutoFocusPlugin />
             <ListPlugin />
             <OnChangePlugin onChange={onChange} />
+            <AISection />
         </LexicalComposer>
     );
 }
