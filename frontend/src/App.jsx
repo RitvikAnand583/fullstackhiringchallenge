@@ -6,13 +6,19 @@ import PostsPage from "./pages/PostsPage";
 import EditorPage from "./pages/EditorPage";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
+import useAuthStore from "./store/useAuthStore";
+
+function RootRedirect() {
+    const { token } = useAuthStore();
+    return <Navigate to={token ? "/dashboard" : "/signup"} replace />;
+}
 
 function App() {
     return (
         <BrowserRouter>
             <Routes>
                 {/* public routes */}
-                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/" element={<RootRedirect />} />
                 <Route path="/post/:id" element={<PostViewPage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/signup" element={<SignupPage />} />

@@ -5,7 +5,7 @@ function ProtectedRoute({ children }) {
     const { token } = useAuthStore();
 
     if (!token) {
-        return <Navigate to="/login" replace />;
+        return <Navigate to="/signup" replace />;
     }
 
     return children;
