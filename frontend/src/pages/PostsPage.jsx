@@ -51,10 +51,10 @@ function PostsPage() {
         <div>
             <div className="flex items-center justify-between mb-6">
                 <h1 className="text-2xl font-bold text-neutral-900">My Posts</h1>
-                <Button onClick={handleNew}>
+                {/* <Button onClick={handleNew}>
                     <PenLine size={16} />
                     New Post
-                </Button>
+                </Button> */}
             </div>
 
             <div className="flex gap-1 mb-6 border-b border-neutral-200">
@@ -62,7 +62,7 @@ function PostsPage() {
                     <button
                         key={tab}
                         onClick={() => setActiveTab(tab)}
-                        className={`px-4 py-2 text-sm font-medium capitalize transition-colors border-b-2 -mb-px ${
+                        className={`px-4 py-2 text-sm font-medium capitalize cursor-pointer transition-all duration-500 border-b-2 -mb-px ${
                             activeTab === tab
                                 ? "border-neutral-900 text-neutral-900"
                                 : "border-transparent text-neutral-400 hover:text-neutral-600"
@@ -95,7 +95,7 @@ function PostsPage() {
                         <div
                             key={post.id}
                             onClick={() => navigate(`/editor/${post.id}`)}
-                            className="flex items-center justify-between p-4 bg-white border border-neutral-200 rounded-lg cursor-pointer hover:border-neutral-300 transition-colors"
+                            className="flex items-center justify-between p-4 bg-white border border-neutral-200 rounded-lg cursor-pointer hover:border-neutral-400 hover:shadow-md hover:-translate-y-0.5 transition-all duration-500"
                         >
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-1">
@@ -114,7 +114,7 @@ function PostsPage() {
                                         e.stopPropagation();
                                         setDeleteTarget(post.id);
                                     }}
-                                    className="p-1.5 text-neutral-400 hover:text-red-500 transition-colors rounded"
+                                    className="p-1.5 text-neutral-400 hover:text-red-500 cursor-pointer transition-all duration-500 rounded"
                                 >
                                     <Trash2 size={16} />
                                 </button>

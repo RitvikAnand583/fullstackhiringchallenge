@@ -33,7 +33,7 @@ function ToolbarButton({ active, onClick, children, title }) {
             type="button"
             onClick={onClick}
             title={title}
-            className={`p-1.5 rounded transition-colors ${
+            className={`p-1.5 rounded cursor-pointer transition-all duration-500 ${
                 active
                     ? "bg-neutral-200 text-neutral-900"
                     : "text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700"

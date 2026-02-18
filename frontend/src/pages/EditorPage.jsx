@@ -55,7 +55,7 @@ function EditorPage() {
                     postIdRef.current = post.id;
                 }
             } else {
-                const post = await createPost({ title: "Untitled" });
+                const post = await createPost();
                 if (post) {
                     postIdRef.current = post.id;
                     setTitle(post.title || "");
@@ -85,7 +85,7 @@ function EditorPage() {
     const handlePublish = async () => {
         if (!postIdRef.current) return;
         await publishPost(postIdRef.current);
-        navigate("/");
+        navigate("/dashboard");
     };
 
     const handleDelete = async () => {
@@ -136,7 +136,7 @@ function EditorPage() {
                 type="text"
                 value={title}
                 onChange={handleTitleChange}
-                placeholder="Post title..."
+                placeholder="Untitled"
                 className="w-full text-3xl font-bold text-neutral-900 placeholder-neutral-300 border-none outline-none bg-transparent mb-6"
             />
 

@@ -26,7 +26,7 @@ function Modal({ isOpen, onClose, title, children }) {
                     </h2>
                     <button
                         onClick={onClose}
-                        className="p-1 text-neutral-400 hover:text-neutral-600 transition-colors rounded"
+                        className="p-1 text-neutral-400 hover:text-neutral-600 cursor-pointer transition-all duration-500 rounded"
                     >
                         <X size={20} />
                     </button>

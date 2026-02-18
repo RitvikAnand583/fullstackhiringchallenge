@@ -89,7 +89,7 @@ function AIPanel({ getText }) {
                                 setResult("");
                                 setError("");
                             }}
-                            className="p-1 text-neutral-400 hover:text-neutral-600 transition-colors rounded"
+                            className="p-1 text-neutral-400 hover:text-neutral-600 cursor-pointer transition-all duration-500 rounded"
                         >
                             <X size={14} />
                         </button>

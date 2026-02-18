@@ -32,7 +32,7 @@ const usePostStore = create((set, get) => ({
     createPost: async (data = {}) => {
         try {
             const res = await postsApi.create({
-                title: data.title || "Untitled",
+                title: data.title || "",
                 content: data.content || null,
             });
             const newPost = res.data;
