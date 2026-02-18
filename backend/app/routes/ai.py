@@ -1,10 +1,12 @@
-from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse, PlainTextResponse
 from pydantic import BaseModel
 from app.config import GEMINI_API_KEY
-import google.generativeai as genai
+from google import genai
 
 router = APIRouter(prefix="/api/ai", tags=["ai"])
+
+client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
 
 class AIRequest(BaseModel):
@@ -18,9 +20,12 @@ PROMPTS = {
 }
 
 
+MODEL_NAME = "gemini-2.5-flash"
+
+
 @router.post("/generate")
 async def generate(req: AIRequest):
-    if not GEMINI_API_KEY or GEMINI_API_KEY == "your_gemini_api_key_here":
+    if not client:
         raise HTTPException(
             status_code=400,
             detail="Gemini API key not set. Add GEMINI_API_KEY to your .env file.",
@@ -32,16 +37,31 @@ async def generate(req: AIRequest):
     prompt = PROMPTS[req.action].format(text=req.text)
 
     try:
-        genai.configure(api_key=GEMINI_API_KEY)
-        model = genai.GenerativeModel("gemini-2.0-flash")
+        # try streaming first
+        response = client.models.generate_content_stream(
+            model=MODEL_NAME,
+            contents=prompt,
+        )
+        # read first chunk to catch errors early
+        first_chunk = next(iter(response))
 
-        async def stream_response():
-            response = model.generate_content(prompt, stream=True)
+        def stream_with_first():
+            if first_chunk.text:
+                yield first_chunk.text
             for chunk in response:
                 if chunk.text:
                     yield chunk.text
 
-        return StreamingResponse(stream_response(), media_type="text/plain")
+        return StreamingResponse(stream_with_first(), media_type="text/plain")
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        error_msg = str(e)
+        # if rate limited, try non-streaming as fallback
+        try:
+            result = client.models.generate_content(
+                model=MODEL_NAME,
+                contents=prompt,
+            )
+            return PlainTextResponse(result.text)
+        except Exception as e2:
+            raise HTTPException(status_code=500, detail=str(e2))
